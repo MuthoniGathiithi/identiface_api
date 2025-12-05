@@ -2,7 +2,7 @@
 Face Recognition API Service
 FastAPI-based REST API for facial identification with Django integration
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -373,9 +373,9 @@ async def identify_face(file: UploadFile = File(...)):
 
 @app.post("/api/enroll")
 async def enroll_student(
-    student_id: str = File(...),
-    student_name: str = File(...),
-    class_code: str = File(...),
+    student_id: str = Form(...),
+    student_name: str = Form(...),
+    class_code: str = Form(...),
     image1: UploadFile = File(...),
     image2: UploadFile = File(...),
     image3: UploadFile = File(...)
@@ -473,7 +473,7 @@ async def enroll_student(
 
 @app.post("/api/mark-attendance")
 async def mark_attendance(
-    class_code: str = File(...),
+    class_code: str = Form(...),
     classroom_image1: UploadFile = File(...),
     classroom_image2: UploadFile = File(...),
     classroom_image3: UploadFile = File(...)
@@ -617,11 +617,15 @@ async def start_enrollment(request: EnrollmentRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/enroll/process-frame/{user_id}")
-async def process_enrollment_frame(user_id: str, file: UploadFile = File(...)):
+@app.post("/enroll/process-frame")
+async def process_enrollment_frame(user_id: str = Form(...), file: UploadFile = File(...)):
     """
     Process a frame for enrollment
     Returns feedback on pose, quality, and readiness to capture
+    
+    Args:
+        user_id: User identifier (passed as form parameter)
+        file: Image file to process
     """
     try:
         # Get session
@@ -656,10 +660,13 @@ async def process_enrollment_frame(user_id: str, file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/enroll/complete/{user_id}")
-async def complete_enrollment(user_id: str, background_tasks: BackgroundTasks):
+@app.post("/enroll/complete")
+async def complete_enrollment(user_id: str = Form(...), background_tasks: BackgroundTasks = None):
     """
     Complete enrollment and save to database
+    
+    Args:
+        user_id: User identifier (passed as form parameter)
     """
     try:
         # Get enrollment data
@@ -688,9 +695,13 @@ async def complete_enrollment(user_id: str, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/enroll/cancel/{user_id}")
-async def cancel_enrollment(user_id: str):
-    """Cancel enrollment session"""
+@app.post("/enroll/cancel")
+async def cancel_enrollment(user_id: str = Form(...)):
+    """Cancel enrollment session
+    
+    Args:
+        user_id: User identifier (passed as form parameter)
+    """
     try:
         enrollment_manager.cancel_session(user_id)
         
@@ -705,9 +716,13 @@ async def cancel_enrollment(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/enroll/status/{user_id}")
+@app.get("/enroll/status")
 async def get_enrollment_status(user_id: str):
-    """Get enrollment session status"""
+    """Get enrollment session status
+    
+    Args:
+        user_id: User identifier (passed as query parameter)
+    """
     try:
         session = enrollment_manager.get_session(user_id)
         
@@ -729,9 +744,13 @@ async def get_enrollment_status(user_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/user/{user_id}")
+@app.delete("/user")
 async def delete_user(user_id: str):
-    """Delete user enrollment from database"""
+    """Delete user enrollment from database
+    
+    Args:
+        user_id: User identifier (passed as query parameter)
+    """
     try:
         success = db_manager.delete_enrollment(user_id)
         

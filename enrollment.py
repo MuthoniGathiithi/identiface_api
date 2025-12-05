@@ -13,7 +13,6 @@ from detection import FaceDetector
 from feature_extraction import FeatureExtractor
 from normalization import FaceNormalizer
 from pose_estimation import PoseEstimator, FacePose
-from video_capture import VideoCapture
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -167,7 +166,7 @@ class EnrollmentSession:
             }
         
         # All checks passed - ready to capture, auto-capture this pose
-        capture_result = self.capture_pose(frame, face)
+        capture_result = self.capture_pose(frame, face, quality)
         
         return {
             'status': 'ready',
@@ -180,13 +179,14 @@ class EnrollmentSession:
             'progress': self.get_progress()
         }
     
-    def capture_pose(self, frame: np.ndarray, face_data: Dict) -> bool:
+    def capture_pose(self, frame: np.ndarray, face_data: Dict, quality: Dict = None) -> bool:
         """
         Capture and store data for current pose
         
         Args:
             frame: Input frame
             face_data: Face detection data
+            quality: Face quality assessment data
             
         Returns:
             True if capture successful
@@ -222,7 +222,7 @@ class EnrollmentSession:
                 'keypoints': keypoints,
                 'face_box': face_box,
                 'timestamp': datetime.now(),
-                'quality_score': face_data.get('quality', {}).get('quality_score', 0.0)
+                'quality_score': quality.get('quality_score', 0.0) if quality else 0.0
             }
             
             logger.info(f"Captured {required_pose.value} pose for user {self.user_id}")

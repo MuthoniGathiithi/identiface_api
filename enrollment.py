@@ -1,6 +1,6 @@
 """
 Face Enrollment Module
-Handles multi-pose face enrollment process
+Handles multi-pose face enrollment process with advanced models
 """
 import cv2
 import numpy as np
@@ -9,9 +9,9 @@ import logging
 import time
 from datetime import datetime
 
-from detection import FaceDetector
-from feature_extraction import FeatureExtractor
-from normalization import FaceNormalizer
+from detection_advanced import FaceDetectorAdvanced
+from feature_extraction_advanced import FeatureExtractorAdvanced
+from normalization_advanced import FaceNormalizerAdvanced
 from pose_estimation import PoseEstimator, FacePose
 
 logging.basicConfig(level=logging.INFO)
@@ -23,17 +23,17 @@ class EnrollmentSession:
     Manages a complete face enrollment session with multiple poses
     """
     
-    def __init__(self, user_id: str, detector: FaceDetector, 
-                 extractor: FeatureExtractor, normalizer: FaceNormalizer,
+    def __init__(self, user_id: str, detector: FaceDetectorAdvanced, 
+                 extractor: FeatureExtractorAdvanced, normalizer: FaceNormalizerAdvanced,
                  pose_estimator: PoseEstimator):
         """
         Initialize enrollment session
         
         Args:
             user_id: Unique identifier for the user
-            detector: Face detector instance
-            extractor: Feature extractor instance
-            normalizer: Face normalizer instance
+            detector: Advanced face detector instance
+            extractor: Advanced feature extractor instance
+            normalizer: Advanced face normalizer instance
             pose_estimator: Pose estimator instance
         """
         self.user_id = user_id

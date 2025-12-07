@@ -1,9 +1,10 @@
 """
-Face Recognition API Service
-FastAPI-based REST API for facial identification with Django integration
+Face Recognition API Service - UPGRADED
+FastAPI-based REST API for facial identification with advanced multi-model support
+Features: Long-distance detection, Advanced feature extraction, Optimized matching
 """
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -14,10 +15,12 @@ import io
 import base64
 from datetime import datetime
 
-from detection import FaceDetector
-from feature_extraction import FeatureExtractor
-from normalization import FaceNormalizer
-from matching import FaceMatcher
+# Import upgraded modules
+from detection_advanced import FaceDetectorAdvanced, DetectionModel
+from feature_extraction_advanced import FeatureExtractorAdvanced, EmbeddingModel
+from normalization_advanced import FaceNormalizerAdvanced
+from matching_advanced import FaceMatcherAdvanced, DistanceMetric
+from long_distance_optimizer import LongDistanceOptimizer
 from pose_estimation import PoseEstimator, FacePose
 from enrollment import EnrollmentManager
 from database import DatabaseManager
@@ -31,25 +34,26 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Face Recognition API",
-    description="Deep learning-based facial identification service using InsightFace (SCRFD + ArcFace)",
-    version="1.0.0"
+    title="Advanced Face Recognition API",
+    description="State-of-the-art facial identification service with multi-model support",
+    version="2.0.0"
 )
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Global components
-detector: Optional[FaceDetector] = None
-extractor: Optional[FeatureExtractor] = None
-normalizer: Optional[FaceNormalizer] = None
-matcher: Optional[FaceMatcher] = None
+detector: Optional[FaceDetectorAdvanced] = None
+extractor: Optional[FeatureExtractorAdvanced] = None
+normalizer: Optional[FaceNormalizerAdvanced] = None
+matcher: Optional[FaceMatcherAdvanced] = None
+long_distance_optimizer: Optional[LongDistanceOptimizer] = None
 pose_estimator: Optional[PoseEstimator] = None
 enrollment_manager: Optional[EnrollmentManager] = None
 db_manager: Optional[DatabaseManager] = None
@@ -68,12 +72,6 @@ class IdentificationResponse(BaseModel):
     confidence: float
     similarity: float
     message: str
-    
-class EnrollmentStatus(BaseModel):
-    user_id: str
-    status: str
-    progress: Dict
-    message: str
 
 class StudentEnrollmentRequest(BaseModel):
     student_id: str
@@ -86,47 +84,98 @@ class AttendanceRequest(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize components on startup"""
-    global detector, extractor, normalizer, matcher, pose_estimator, enrollment_manager, db_manager
+    """Initialize components on startup with advanced models"""
+    global detector, extractor, normalizer, matcher, long_distance_optimizer
+    global pose_estimator, enrollment_manager, db_manager
     
-    logger.info("Initializing Face Recognition Service...")
+    logger.info("Initializing Advanced Face Recognition Service...")
     
     try:
-        # Initialize components with InsightFace
-        model_name = 'buffalo_l'  # High accuracy model
         ctx_id = -1  # CPU (-1) or GPU (0, 1, 2, ...)
         
-        detector = FaceDetector(model_name=model_name, min_confidence=0.5, ctx_id=ctx_id)
-        extractor = FeatureExtractor(model_name=model_name, ctx_id=ctx_id)
-        normalizer = FaceNormalizer(target_size=(160, 160))
-        matcher = FaceMatcher(threshold=0.4, metric='cosine')
+        # Initialize detector with ensemble model for best performance
+        logger.info("Initializing detector (multi-model ensemble)...")
+        detector = FaceDetectorAdvanced(
+            model=DetectionModel.ENSEMBLE,  # Ensemble of SCRFD, YOLOv8, RetinaFace
+            min_confidence=0.5,
+            ctx_id=ctx_id,
+            enable_blur_detection=True,
+            enable_face_quality=True
+        )
+        
+        # Initialize feature extractor with ArcFace
+        logger.info("Initializing feature extractor (ArcFace)...")
+        extractor = FeatureExtractorAdvanced(
+            model=EmbeddingModel.ARCFACE,
+            ctx_id=ctx_id,
+            use_ensemble=False,
+            normalize_embeddings=True
+        )
+        
+        # Initialize normalizer with advanced preprocessing
+        logger.info("Initializing normalizer (advanced preprocessing)...")
+        normalizer = FaceNormalizerAdvanced(
+            target_size=(224, 224),
+            enable_affine_alignment=True,
+            enable_3d_alignment=False,
+            normalize_color=True
+        )
+        
+        # Initialize matcher with cosine distance
+        logger.info("Initializing matcher (advanced multi-metric)...")
+        matcher = FaceMatcherAdvanced(
+            metric=DistanceMetric.COSINE,
+            threshold=0.4,
+            use_adaptive_threshold=True,
+            enable_quality_weighting=True
+        )
+        
+        # Initialize long-distance optimizer
+        logger.info("Initializing long-distance optimizer...")
+        long_distance_optimizer = LongDistanceOptimizer(
+            enable_super_resolution=False,  # Set to True if needed
+            enable_multi_scale=True,
+            enable_denoising=True
+        )
+        
+        # Initialize pose estimator
+        logger.info("Initializing pose estimator...")
         pose_estimator = PoseEstimator(yaw_threshold=20.0, pitch_threshold=15.0)
         
         # Initialize enrollment manager
+        logger.info("Initializing enrollment manager...")
         enrollment_manager = EnrollmentManager()
-        enrollment_manager.initialize_components(model_name=model_name, ctx_id=ctx_id)
         
-        # Initialize database manager (configure Django settings as needed)
+        # Initialize database manager
+        logger.info("Initializing database manager...")
         db_manager = DatabaseManager(django_settings_module=None, cache_size=1000)
         
-        logger.info("✓ Face Recognition Service initialized successfully")
+        logger.info("✓ Advanced Face Recognition Service initialized successfully")
         
     except Exception as e:
-        logger.error(f"Failed to initialize service: {e}")
+        logger.error(f"Failed to initialize service: {e}", exc_info=True)
         raise
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    logger.info("Shutting down Face Recognition Service...")
 
 
 @app.get("/")
 async def root():
     """Root endpoint"""
     return {
-        "service": "Face Recognition API",
-        "version": "1.0.0",
+        "service": "Advanced Face Recognition API",
+        "version": "2.0.0",
         "status": "running",
-        "models": {
-            "detector": "InsightFace SCRFD",
-            "feature_extractor": "InsightFace ArcFace",
-            "embedding_size": 512
+        "capabilities": {
+            "detection": "Multi-model ensemble (SCRFD, YOLOv8, RetinaFace)",
+            "recognition": "ArcFace embeddings (512-dim)",
+            "long_distance": "Optimized for long-distance and small faces",
+            "features": ["Multi-scale detection", "Blur detection", "Quality assessment", 
+                        "Adaptive thresholds", "Distance-aware matching"]
         }
     }
 
@@ -138,8 +187,10 @@ async def health_check():
         "status": "healthy",
         "components": {
             "detector": detector is not None,
-            "extractor": extractor is not None and extractor.is_available(),
+            "extractor": extractor is not None,
             "matcher": matcher is not None,
+            "normalizer": normalizer is not None,
+            "long_distance_optimizer": long_distance_optimizer is not None,
             "database": db_manager is not None
         },
         "timestamp": datetime.now().isoformat()
@@ -147,14 +198,70 @@ async def health_check():
 
 
 @app.post("/detect")
-async def detect_faces(file: UploadFile = File(...)):
+async def detect_faces(file: UploadFile = File(...), enable_quality: bool = True):
     """
-    Detect faces in an image
+    Detect faces in an image with advanced multi-model ensemble
     
-    Returns face bounding boxes, confidence scores, and landmarks
+    Features:
+    - Multi-scale detection
+    - Blur detection
+    - Quality assessment
     """
     try:
         # Read image
+        contents = await file.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            raise HTTPException(status_code=400, detail="Invalid image file")
+        
+        # Detect faces with ensemble
+        faces = detector.detect_faces(image)
+        
+        # Format response
+        results = []
+        for face in faces:
+            face_data = {
+                "box": {
+                    "x": int(face['box'][0]),
+                    "y": int(face['box'][1]),
+                    "width": int(face['box'][2]),
+                    "height": int(face['box'][3])
+                },
+                "confidence": float(face['confidence']),
+                "model": face.get('model', 'ensemble'),
+                "keypoints": {k: [int(v[0]), int(v[1])] for k, v in face.get('keypoints', {}).items()}
+            }
+            
+            if enable_quality and 'quality_score' in face:
+                face_data['quality_score'] = float(face['quality_score'])
+            
+            results.append(face_data)
+        
+        return {
+            "success": True,
+            "faces_detected": len(faces),
+            "faces": results,
+            "image_size": {"width": image.shape[1], "height": image.shape[0]}
+        }
+        
+    except Exception as e:
+        logger.error(f"Face detection error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/extract-features")
+async def extract_features(file: UploadFile = File(...)):
+    """
+    Extract face embeddings (512-dimensional ArcFace vectors)
+    
+    Features:
+    - Advanced preprocessing and alignment
+    - Quality assessment
+    - Normalization
+    """
+    try:
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -165,115 +272,103 @@ async def detect_faces(file: UploadFile = File(...)):
         # Detect faces
         faces = detector.detect_faces(image)
         
-        # Format response
-        results = []
-        for face in faces:
-            results.append({
-                "box": {
-                    "x": int(face['box'][0]),
-                    "y": int(face['box'][1]),
-                    "width": int(face['box'][2]),
-                    "height": int(face['box'][3])
-                },
-                "confidence": float(face['confidence']),
-                "keypoints": {k: [int(v[0]), int(v[1])] for k, v in face['keypoints'].items()}
-            })
-        
-        return {
-            "success": True,
-            "faces_detected": len(faces),
-            "faces": results
-        }
-        
-    except Exception as e:
-        logger.error(f"Face detection error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/extract-features")
-async def extract_features(file: UploadFile = File(...)):
-    """
-    Extract face embeddings from an image
-    
-    Returns 512-dimensional embedding vectors
-    """
-    try:
-        # Read image
-        contents = await file.read()
-        nparr = np.frombuffer(contents, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        if image is None:
-            raise HTTPException(status_code=400, detail="Invalid image file")
-        
-        # Extract embeddings for all faces
-        results = extractor.extract_multiple_embeddings(image)
-        
-        if not results:
+        if not faces:
             return {
                 "success": False,
-                "message": "No faces detected in image",
+                "message": "No faces detected",
                 "embeddings": []
             }
         
-        # Format response
-        embeddings_data = []
-        for result in results:
-            embeddings_data.append({
-                "box": {
-                    "x": int(result['box'][0]),
-                    "y": int(result['box'][1]),
-                    "width": int(result['box'][2]),
-                    "height": int(result['box'][3])
-                },
-                "confidence": float(result['confidence']),
-                "embedding": result['embedding'].tolist(),
-                "embedding_size": len(result['embedding'])
-            })
+        embeddings = []
+        for face in faces:
+            x, y, w, h = face['box']
+            face_crop = image[y:y+h, x:x+w]
+            
+            # Normalize face
+            normalized = normalizer.normalize_complete(face_crop, face.get('keypoints', {}))
+            
+            # Extract embedding
+            embedding = extractor.extract_embedding(normalized)
+            
+            if embedding is not None:
+                embeddings.append({
+                    "embedding": embedding.tolist(),
+                    "dimension": len(embedding),
+                    "confidence": float(face['confidence'])
+                })
         
         return {
-            "success": True,
-            "faces_found": len(results),
-            "embeddings": embeddings_data
+            "success": len(embeddings) > 0,
+            "embeddings_extracted": len(embeddings),
+            "embeddings": embeddings
         }
         
     except Exception as e:
-        logger.error(f"Feature extraction error: {e}")
+        logger.error(f"Feature extraction error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/verify")
 async def verify_faces(file1: UploadFile = File(...), file2: UploadFile = File(...)):
     """
-    Verify if two images contain the same person (1:1 matching)
+    Verify if two faces belong to the same person (1:1 matching)
+    
+    Advanced features:
+    - Cosine distance metric
+    - Adaptive thresholds
+    - Quality-weighted confidence
     """
     try:
-        # Read first image
+        # Read images
         contents1 = await file1.read()
         nparr1 = np.frombuffer(contents1, np.uint8)
         image1 = cv2.imdecode(nparr1, cv2.IMREAD_COLOR)
         
-        # Read second image
         contents2 = await file2.read()
         nparr2 = np.frombuffer(contents2, np.uint8)
         image2 = cv2.imdecode(nparr2, cv2.IMREAD_COLOR)
         
         if image1 is None or image2 is None:
-            raise HTTPException(status_code=400, detail="Invalid image file")
+            raise HTTPException(status_code=400, detail="Invalid image file(s)")
         
-        # Extract embeddings
-        embedding1 = extractor.extract_embedding(image1)
-        embedding2 = extractor.extract_embedding(image2)
+        # Detect and extract embeddings from both images
+        faces1 = detector.detect_faces(image1)
+        faces2 = detector.detect_faces(image2)
         
-        if embedding1 is None or embedding2 is None:
+        if not faces1 or not faces2:
             return {
                 "success": False,
-                "message": "Failed to extract face embeddings",
-                "match": False
+                "match": False,
+                "message": "Could not detect face(s) in one or both images",
+                "similarity": 0.0
+            }
+        
+        # Extract embeddings
+        face1 = faces1[0]
+        face2 = faces2[0]
+        
+        x1, y1, w1, h1 = face1['box']
+        crop1 = image1[y1:y1+h1, x1:x1+w1]
+        norm1 = normalizer.normalize_complete(crop1, face1.get('keypoints', {}))
+        emb1 = extractor.extract_embedding(norm1)
+        
+        x2, y2, w2, h2 = face2['box']
+        crop2 = image2[y2:y2+h2, x2:x2+w2]
+        norm2 = normalizer.normalize_complete(crop2, face2.get('keypoints', {}))
+        emb2 = extractor.extract_embedding(norm2)
+        
+        if emb1 is None or emb2 is None:
+            return {
+                "success": False,
+                "match": False,
+                "message": "Could not extract embeddings",
+                "similarity": 0.0
             }
         
         # Verify
-        result = matcher.verify(embedding1, embedding2)
+        result = matcher.verify(emb1, emb2,
+                               quality1=face1.get('quality_score', 1.0),
+                               quality2=face2.get('quality_score', 1.0))
         
         return {
             "success": True,
@@ -281,21 +376,26 @@ async def verify_faces(file1: UploadFile = File(...), file2: UploadFile = File(.
             "similarity": result['similarity'],
             "distance": result['distance'],
             "confidence": result['confidence'],
-            "threshold": result['threshold']
+            "threshold": result['threshold'],
+            "metric": result['model']
         }
         
     except Exception as e:
-        logger.error(f"Verification error: {e}")
+        logger.error(f"Verification error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/identify")
-async def identify_face(file: UploadFile = File(...)):
+async def identify_face(file: UploadFile = File(...), top_k: int = 5):
     """
-    Identify a person from the enrolled database (1:N matching)
+    Identify a face from gallery (1:N matching)
+    
+    Advanced features:
+    - Adaptive thresholds
+    - Top-K matching
+    - Quality-weighted ranking
     """
     try:
-        # Read image
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -303,514 +403,190 @@ async def identify_face(file: UploadFile = File(...)):
         if image is None:
             raise HTTPException(status_code=400, detail="Invalid image file")
         
+        # Detect face
+        faces = detector.detect_faces(image)
+        
+        if not faces:
+            return {
+                "success": False,
+                "identified": False,
+                "message": "No face detected",
+                "matches": []
+            }
+        
         # Extract embedding
-        query_embedding = extractor.extract_embedding(image)
+        face = faces[0]
+        x, y, w, h = face['box']
+        crop = image[y:y+h, x:x+w]
+        normalized = normalizer.normalize_complete(crop, face.get('keypoints', {}))
+        embedding = extractor.extract_embedding(normalized)
         
-        if query_embedding is None:
+        if embedding is None:
             return {
                 "success": False,
-                "message": "No face detected in image",
-                "user_id": None,
-                "confidence": 0.0
+                "identified": False,
+                "message": "Could not extract embedding",
+                "matches": []
             }
         
-        # Get all enrolled embeddings from database
-        enrolled = db_manager.get_all_embeddings()
+        # Get gallery embeddings
+        gallery_embeddings, gallery_ids = db_manager.get_all_embeddings_for_matching()
         
-        if not enrolled:
-            return {
-                "success": False,
-                "message": "No enrolled users in database",
-                "user_id": None,
-                "confidence": 0.0
-            }
-        
-        gallery_embeddings = [item['embedding'] for item in enrolled]
-        gallery_ids = [item['user_id'] for item in enrolled]
-        
-        # Identify
-        best_match = matcher.find_best_match(query_embedding, gallery_embeddings, gallery_ids)
-        
-        if best_match:
-            # Log recognition attempt
-            db_manager.connector.log_recognition_attempt(
-                user_id=best_match['identity_id'],
-                confidence=best_match['similarity'],
-                success=True
-            )
-            
-            # Update last recognition time
-            db_manager.connector.update_last_recognition(best_match['identity_id'])
-            
+        if not gallery_embeddings:
             return {
                 "success": True,
-                "user_id": best_match['identity_id'],
-                "confidence": best_match['similarity'],
-                "similarity": best_match['similarity'],
-                "distance": best_match['distance'],
-                "message": "User identified successfully"
-            }
-        else:
-            # Log failed attempt
-            db_manager.connector.log_recognition_attempt(
-                user_id=None,
-                confidence=0.0,
-                success=False
-            )
-            
-            return {
-                "success": False,
-                "user_id": None,
-                "confidence": 0.0,
-                "similarity": 0.0,
-                "message": "No matching user found"
+                "identified": False,
+                "message": "Gallery is empty",
+                "matches": []
             }
         
+        # Identify
+        matches = matcher.identify(embedding, gallery_embeddings, gallery_ids, top_k=top_k)
+        
+        return {
+            "success": True,
+            "identified": len(matches) > 0 and matches[0]['passes_threshold'],
+            "top_k": top_k,
+            "matches": [
+                {
+                    "identity_id": m['identity_id'],
+                    "similarity": m['similarity'],
+                    "distance": m['distance'],
+                    "confidence": m['confidence'],
+                    "matches_threshold": m['passes_threshold']
+                } for m in matches
+            ]
+        }
+        
     except Exception as e:
-        logger.error(f"Identification error: {e}")
+        logger.error(f"Identification error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/enroll")
+@app.post("/enroll-student")
 async def enroll_student(
+    file: UploadFile = File(...),
     student_id: str = Form(...),
     student_name: str = Form(...),
-    class_code: str = Form(...),
-    image1: UploadFile = File(...),
-    image2: UploadFile = File(...),
-    image3: UploadFile = File(...)
+    class_code: str = Form(...)
 ):
     """
-    Enroll a student with 3 images for a specific class
-    
-    Args:
-        student_id: Student identifier (e.g., STU001)
-        student_name: Student full name
-        class_code: Class identifier (e.g., CS101, DB202)
-        image1, image2, image3: Three face images of the student
-        
-    Returns:
-        success, face_encoding (base64), student_id, class_code
+    Enroll a student with face images
     """
     try:
-        logger.info(f"Starting enrollment for student {student_id} in class {class_code}")
-        
-        embeddings = []
-        
-        # Process each of the 3 images
-        for idx, image_file in enumerate([image1, image2, image3], 1):
-            # Read image
-            contents = await image_file.read()
-            nparr = np.frombuffer(contents, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
-            if image is None:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Invalid image file: image{idx}"
-                )
-            
-            # Extract embedding
-            embedding = extractor.extract_embedding(image)
-            
-            if embedding is None:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"No face detected in image{idx}. Please ensure face is clearly visible."
-                )
-            
-            embeddings.append(embedding)
-            logger.info(f"Extracted embedding from image {idx} for student {student_id}")
-        
-        # Average the 3 embeddings for robustness
-        average_embedding = np.mean(embeddings, axis=0)
-        
-        # Normalize the averaged embedding
-        average_embedding = average_embedding / np.linalg.norm(average_embedding)
-        
-        # Prepare enrollment data with class_code
-        enrollment_data = {
-            'user_id': student_id,
-            'student_name': student_name,
-            'class_code': class_code,
-            'average_embedding': average_embedding,
-            'individual_embeddings': embeddings,
-            'enrollment_date': datetime.now().isoformat(),
-            'embedding_size': len(average_embedding),
-            'num_images': 3
-        }
-        
-        # Save to database with class_code
-        success = db_manager.save_enrollment_with_class(enrollment_data)
-        
-        if not success:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to save enrollment to database"
-            )
-        
-        # Convert embedding to base64 for response
-        embedding_base64 = base64.b64encode(average_embedding.tobytes()).decode('utf-8')
-        
-        logger.info(f"Successfully enrolled student {student_id} in class {class_code}")
-        
-        return {
-            "success": True,
-            "student_id": student_id,
-            "student_name": student_name,
-            "class_code": class_code,
-            "face_encoding": embedding_base64,
-            "embedding_size": len(average_embedding),
-            "message": f"Student {student_name} enrolled successfully in {class_code}"
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Enrollment error for student {student_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/mark-attendance")
-async def mark_attendance(
-    class_code: str = Form(...),
-    classroom_image1: UploadFile = File(...),
-    classroom_image2: UploadFile = File(...),
-    classroom_image3: UploadFile = File(...)
-):
-    """
-    Mark attendance for a class by detecting faces in classroom images
-    
-    Args:
-        class_code: Class identifier (e.g., CS101, DB202)
-        classroom_image1, classroom_image2, classroom_image3: Three classroom photos
-        
-    Returns:
-        success, present_students (list of student_ids), details
-    """
-    try:
-        logger.info(f"Starting attendance marking for class {class_code}")
-        
-        # Get enrolled students for this specific class only
-        enrolled_students = db_manager.get_embeddings_by_class(class_code)
-        
-        if not enrolled_students:
-            return {
-                "success": False,
-                "message": f"No enrolled students found for class {class_code}",
-                "present_students": [],
-                "class_code": class_code
-            }
-        
-        logger.info(f"Found {len(enrolled_students)} enrolled students in class {class_code}")
-        
-        # Prepare gallery for matching (only students in this class)
-        gallery_embeddings = [student['embedding'] for student in enrolled_students]
-        gallery_ids = [student['user_id'] for student in enrolled_students]
-        
-        # Track detected students (use set to avoid duplicates)
-        detected_students = set()
-        detection_details = []
-        
-        # Process each classroom image
-        for idx, classroom_image in enumerate([classroom_image1, classroom_image2, classroom_image3], 1):
-            # Read image
-            contents = await classroom_image.read()
-            nparr = np.frombuffer(contents, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
-            if image is None:
-                logger.warning(f"Invalid classroom image {idx}")
-                continue
-            
-            # Detect all faces in the classroom image
-            faces = detector.detect_faces(image)
-            logger.info(f"Detected {len(faces)} faces in classroom image {idx}")
-            
-            # Extract embeddings for each detected face
-            for face_idx, face in enumerate(faces):
-                try:
-                    # Extract embedding for this face
-                    face_embedding = extractor.extract_embedding_from_face(image, face)
-                    
-                    if face_embedding is None:
-                        continue
-                    
-                    # Match against enrolled students in this class
-                    match_result = matcher.find_best_match(
-                        face_embedding, 
-                        gallery_embeddings, 
-                        gallery_ids
-                    )
-                    
-                    if match_result:
-                        student_id = match_result['identity_id']
-                        confidence = match_result['similarity']
-                        
-                        detected_students.add(student_id)
-                        
-                        detection_details.append({
-                            "image_number": idx,
-                            "face_number": face_idx + 1,
-                            "student_id": student_id,
-                            "confidence": float(confidence),
-                            "similarity": float(match_result['similarity'])
-                        })
-                        
-                        logger.info(f"Matched student {student_id} with confidence {confidence:.3f}")
-                
-                except Exception as e:
-                    logger.error(f"Error processing face {face_idx} in image {idx}: {e}")
-                    continue
-        
-        # Convert set to sorted list
-        present_students = sorted(list(detected_students))
-        
-        logger.info(f"Attendance marking complete for {class_code}: {len(present_students)} students present")
-        
-        return {
-            "success": True,
-            "class_code": class_code,
-            "present_students": present_students,
-            "total_present": len(present_students),
-            "total_enrolled": len(enrolled_students),
-            "detection_details": detection_details,
-            "message": f"Attendance marked successfully for {class_code}"
-        }
-        
-    except Exception as e:
-        logger.error(f"Attendance marking error for class {class_code}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/enroll/start")
-async def start_enrollment(request: EnrollmentRequest):
-    """
-    Start a new enrollment session for a user
-    Requires capturing multiple poses: front, left, right, down
-    """
-    try:
-        user_id = request.user_id
-        
-        # Check if session already exists
-        existing_session = enrollment_manager.get_session(user_id)
-        if existing_session:
-            return {
-                "success": False,
-                "message": "Enrollment session already in progress",
-                "progress": existing_session.get_progress()
-            }
-        
-        # Start new session
-        session = enrollment_manager.start_session(user_id)
-        
-        return {
-            "success": True,
-            "message": "Enrollment session started",
-            "user_id": user_id,
-            "required_poses": [pose.value for pose in session.required_poses],
-            "progress": session.get_progress()
-        }
-        
-    except Exception as e:
-        logger.error(f"Enrollment start error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/enroll/process-frame")
-async def process_enrollment_frame(user_id: str = Form(...), file: UploadFile = File(...)):
-    """
-    Process a frame for enrollment
-    Returns feedback on pose, quality, and readiness to capture
-    
-    Args:
-        user_id: User identifier (passed as form parameter)
-        file: Image file to process
-    """
-    try:
-        # Get session
-        session = enrollment_manager.get_session(user_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="No enrollment session found for user")
-        
-        # Read image
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        if frame is None:
+        if image is None:
             raise HTTPException(status_code=400, detail="Invalid image file")
         
-        # Process frame
-        result = session.process_frame(frame)
-        
-        # If ready and status is 'ready', auto-capture
-        if result['status'] == 'ready':
-            captured = session.capture_pose(frame, result['face'])
-            if captured:
-                result['captured'] = True
-                result['progress'] = session.get_progress()
+        # Process enrollment
+        result = enrollment_manager.enroll_student(
+            image=image,
+            student_id=student_id,
+            student_name=student_name,
+            class_code=class_code,
+            detector=detector,
+            extractor=extractor,
+            normalizer=normalizer,
+            pose_estimator=pose_estimator,
+            db_manager=db_manager
+        )
         
         return result
         
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Enrollment frame processing error: {e}")
+        logger.error(f"Enrollment error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/enroll/complete")
-async def complete_enrollment(user_id: str = Form(...), background_tasks: BackgroundTasks = None):
+@app.post("/attendance")
+async def mark_attendance(
+    file: UploadFile = File(...),
+    class_code: str = Form(...)
+):
     """
-    Complete enrollment and save to database
+    Mark student attendance using face recognition (1:N matching - multiple faces)
     
-    Args:
-        user_id: User identifier (passed as form parameter)
+    Process ALL faces in image and return list of recognized students
     """
     try:
-        # Get enrollment data
-        enrollment_data = enrollment_manager.end_session(user_id)
+        contents = await file.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        if not enrollment_data:
-            raise HTTPException(status_code=400, detail="Enrollment not complete or session not found")
+        if image is None:
+            raise HTTPException(status_code=400, detail="Invalid image file")
         
-        # Save to database
-        success = db_manager.save_enrollment(enrollment_data)
+        # Detect ALL faces in image
+        faces = detector.detect_faces(image)
         
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to save enrollment to database")
-        
-        return {
-            "success": True,
-            "message": "Enrollment completed successfully",
-            "user_id": user_id,
-            "enrollment_date": enrollment_data['enrollment_date']
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Enrollment completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/enroll/cancel")
-async def cancel_enrollment(user_id: str = Form(...)):
-    """Cancel enrollment session
-    
-    Args:
-        user_id: User identifier (passed as form parameter)
-    """
-    try:
-        enrollment_manager.cancel_session(user_id)
-        
-        return {
-            "success": True,
-            "message": "Enrollment session cancelled",
-            "user_id": user_id
-        }
-        
-    except Exception as e:
-        logger.error(f"Enrollment cancellation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/enroll/status")
-async def get_enrollment_status(user_id: str):
-    """Get enrollment session status
-    
-    Args:
-        user_id: User identifier (passed as query parameter)
-    """
-    try:
-        session = enrollment_manager.get_session(user_id)
-        
-        if not session:
+        if not faces:
             return {
-                "success": False,
-                "message": "No active enrollment session",
-                "user_id": user_id
+                "success": True,
+                "marked": False,
+                "present_students": [],
+                "count": 0,
+                "message": "No faces detected in image"
             }
         
-        return {
-            "success": True,
-            "progress": session.get_progress(),
-            "current_pose": session.get_current_required_pose().value if session.get_current_required_pose() else None
-        }
+        # Get gallery for matching
+        gallery_embeddings, gallery_ids = db_manager.get_all_embeddings_for_matching()
+        present_students = []
+        matched_details = []
         
-    except Exception as e:
-        logger.error(f"Enrollment status error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.delete("/user")
-async def delete_user(user_id: str):
-    """Delete user enrollment from database
-    
-    Args:
-        user_id: User identifier (passed as query parameter)
-    """
-    try:
-        success = db_manager.delete_enrollment(user_id)
-        
-        if not success:
-            raise HTTPException(status_code=404, detail="User not found or deletion failed")
-        
-        return {
-            "success": True,
-            "message": "User enrollment deleted successfully",
-            "user_id": user_id
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"User deletion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/users/count")
-async def get_users_count():
-    """Get count of enrolled users"""
-    try:
-        enrolled = db_manager.get_all_embeddings()
+        # Process EACH face in image
+        for face in faces:
+            try:
+                x, y, w, h = face['box']
+                crop = image[y:y+h, x:x+w]
+                normalized = normalizer.normalize_complete(crop, face.get('keypoints', {}))
+                embedding = extractor.extract_embedding(normalized)
+                
+                if embedding is None:
+                    continue
+                
+                # Identify student for this face
+                best_match = matcher.find_best_match(embedding, gallery_embeddings, gallery_ids)
+                
+                if best_match and best_match['confidence'] > 0.6:
+                    student_id = best_match['identity_id']
+                    
+                    # Only add unique students (avoid duplicates if same person appears twice)
+                    if student_id not in present_students:
+                        present_students.append(student_id)
+                        
+                        # Mark attendance in database
+                        db_result = db_manager.mark_attendance(student_id, class_code)
+                        
+                        matched_details.append({
+                            "student_id": student_id,
+                            "confidence": best_match['confidence'],
+                            "marked": db_result
+                        })
+                        
+                        logger.info(f"Marked attendance: {student_id} (confidence: {best_match['confidence']:.3f})")
+            
+            except Exception as face_error:
+                logger.warning(f"Error processing face: {face_error}")
+                continue
         
         return {
             "success": True,
-            "count": len(enrolled)
+            "marked": len(present_students) > 0,
+            "present_students": present_students,  # List of recognized student IDs
+            "count": len(present_students),
+            "faces_detected": len(faces),
+            "details": matched_details,
+            "message": f"Attendance marked for {len(present_students)} students from {len(faces)} faces detected"
         }
         
     except Exception as e:
-        logger.error(f"User count error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/database/refresh-cache")
-async def refresh_database_cache():
-    """Refresh the embedding cache from database"""
-    try:
-        db_manager.refresh_cache()
-        
-        return {
-            "success": True,
-            "message": "Database cache refreshed",
-            "cache_size": db_manager.cache.size()
-        }
-        
-    except Exception as e:
-        logger.error(f"Cache refresh error: {e}")
+        logger.error(f"Attendance error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
     import uvicorn
-    
-    # Run the API server
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8001,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

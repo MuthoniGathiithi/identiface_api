@@ -1,200 +1,487 @@
-# Face Recognition API Service
+# Advanced Face Recognition API Service - v2.0
 
-A production-ready facial identification API using **InsightFace** (SCRFD for detection + ArcFace for recognition) with Django database integration.
+A state-of-the-art facial identification API with **multi-model ensemble detection** and **advanced embeddings** for production deployment.
 
-## 🚀 Features
+## 🚀 Features (v2.0 - Upgraded)
 
-- **Advanced Face Detection**: SCRFD (Sample and Computation Redistribution for Face Detection)
-- **High-Accuracy Recognition**: ArcFace embeddings (512-dimensional vectors)
-- **Multi-Pose Enrollment**: Captures front, left, right, and down poses for robust recognition
-- **Quality Assurance**: Automatic checks for lighting, blur, obstructions, and pose validation
-- **Real-time Processing**: Optimized for both CPU and GPU inference
-- **Django Integration**: Ready-to-connect with Django projects
-- **RESTful API**: FastAPI-based endpoints with automatic documentation
-- **Caching System**: In-memory embedding cache for fast lookups
+### Detection (Multi-Model Ensemble)
+- **SCRFD** (InsightFace) - Primary detector
+- **YOLOv8-Face** - Long-distance detection optimization
+- **RetinaFace** - Small and distant face detection
+- **Ensemble NMS** - Automatic detection merging for best accuracy
+- **Quality Assessment** - Blur, brightness, contrast evaluation
+- **Multi-scale Detection** - Handles faces at any distance
+
+### Face Recognition
+- **ArcFace Embeddings** - 512-dimensional vectors (InsightFace)
+- **Advanced Normalization** - Alignment, preprocessing, enhancement
+- **Multi-metric Matching** - Cosine, Euclidean, Manhattan, Angular
+- **Adaptive Thresholds** - Gallery-size aware matching
+- **Quality-Weighted Scoring** - Confidence based on face quality
+- **Long-Distance Optimization** - Super-resolution, denoising
+
+### Django Integration
+- **Django ORM Support** - Seamless database integration
+- **Attendance Marking** - Automatic student recognition
+- **Student Enrollment** - Multi-pose face capture
+- **Caching System** - Redis/in-memory embedding cache
+- **Class-based Grouping** - Per-class gallery management
+
+### API Features
+- **FastAPI v2** - Modern async REST endpoints
+- **Automatic Documentation** - Swagger UI + ReDoc
+- **Health Monitoring** - Component status checks
+- **Error Handling** - Detailed error messages
+- **CORS Support** - Cross-origin requests enabled
 
 ## 📋 System Requirements
 
+### Minimum
 - Python 3.8+
-- OpenCV compatible system
-- 4GB+ RAM (8GB+ recommended)
-- Optional: CUDA-compatible GPU for faster processing
+- 8GB RAM
+- 10GB disk space (for models)
+- CPU: 4 cores
+
+### Recommended (Optimal Performance)
+- Python 3.10+
+- 16GB+ RAM
+- 20GB SSD
+- NVIDIA GPU with 6GB+ VRAM (optional but recommended)
+- CPU: Intel i7/i9 or AMD Ryzen 5+
 
 ## 🛠️ Installation
 
-### 1. Clone or Setup Project
+### Quick Start (3 steps)
 
 ```bash
-cd /home/muthoni/face_service
-```
+# 1. Navigate to project
+cd /home/muthoni/identiface_api
 
-### 2. Create Virtual Environment
+# 2. Create virtual environment
+python3 -m venv venv && source venv/bin/activate
 
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-
-```bash
+# 3. Install all dependencies
 pip install -r requirements.txt
 ```
 
-### 4. Download InsightFace Models
+### Detailed Installation
 
-The models will be automatically downloaded on first run. They will be stored in `~/.insightface/models/`.
+See `INSTALLATION_GUIDE.md` for:
+- Step-by-step setup
+- GPU configuration
+- Model downloads
+- Troubleshooting
+- Testing procedures
 
-**Available models:**
-- `buffalo_l` - High accuracy (recommended, ~600MB)
-- `buffalo_s` - Balanced speed/accuracy (~200MB)
-- `antelopev2` - Latest model
+### Required Modules
+
+See `MODULES_TO_INSTALL.md` for:
+- Critical modules (InsightFace, OpenCV, FastAPI)
+- Optional advanced modules (YOLOv8, RetinaFace, PyTorch)
+- One-line installation
+- Verification steps
 
 ## 🏃 Quick Start
 
 ### Start the API Server
 
 ```bash
-python main.py
+# Activate virtual environment
+source venv/bin/activate
+
+# Run the server
+python3 main.py
 ```
 
-The API will be available at: `http://localhost:8000`
+The API will be available at: **http://localhost:8000**
 
 ### API Documentation
 
 Once running, visit:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
+- **API Info**: http://localhost:8000/
 
-## 📚 API Endpoints
+### Health Check
 
-### Core Endpoints
-
-#### 1. Health Check
 ```bash
-GET /health
+curl http://localhost:8000/health
 ```
 
-#### 2. Detect Faces
-```bash
-POST /detect
-Content-Type: multipart/form-data
-Body: file=<image_file>
+Response:
+```json
+{
+  "status": "healthy",
+  "components": {
+    "detector": true,
+    "extractor": true,
+    "matcher": true,
+    "normalizer": true,
+    "long_distance_optimizer": true,
+    "database": true
+  }
+}
 ```
 
-#### 3. Extract Features
-```bash
-POST /extract-features
-Content-Type: multipart/form-data
-Body: file=<image_file>
+## 📚 API Endpoints (v2.0)
+
+### 1. Health Check
+**GET** `/health`
+
+Check API and component health status.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "components": {
+    "detector": true,
+    "extractor": true,
+    "matcher": true,
+    "normalizer": true,
+    "long_distance_optimizer": true,
+    "database": true
+  }
+}
 ```
 
-#### 4. Verify Faces (1:1)
+---
+
+### 2. Detect Faces
+**POST** `/detect`
+
+Detect faces in an image using multi-model ensemble (SCRFD + YOLOv8 + RetinaFace).
+
+**Request:**
 ```bash
-POST /verify
-Content-Type: multipart/form-data
-Body: file1=<image1>, file2=<image2>
+curl -X POST "http://localhost:8000/detect" \
+  -F "file=@image.jpg" \
+  -H "Accept: application/json"
 ```
 
-#### 5. Identify Face (1:N)
-```bash
-POST /identify
-Content-Type: multipart/form-data
-Body: file=<image_file>
+**Response:**
+```json
+{
+  "detections": [
+    {
+      "bbox": [100, 150, 200, 250],
+      "confidence": 0.99,
+      "landmarks": [[110, 160], [130, 165], ...],
+      "quality": 0.95,
+      "blur_score": 0.05
+    }
+  ],
+  "num_faces": 1,
+  "models_used": ["SCRFD", "YOLOV8", "RETINAFACE"]
+}
 ```
 
-### Enrollment Endpoints
+---
 
-#### Start Enrollment
+### 3. Extract Features
+**POST** `/extract-features`
+
+Extract 512-dimensional ArcFace embeddings from detected faces.
+
+**Request:**
 ```bash
-POST /enroll/start
-Content-Type: application/json
-Body: {"user_id": "user123"}
+curl -X POST "http://localhost:8000/extract-features" \
+  -F "file=@image.jpg" \
+  -H "Accept: application/json"
 ```
 
-#### Process Enrollment Frame
-```bash
-POST /enroll/process-frame/{user_id}
-Content-Type: multipart/form-data
-Body: file=<image_file>
+**Response:**
+```json
+{
+  "embeddings": [[0.123, 0.456, ..., -0.789]],
+  "bboxes": [[100, 150, 200, 250]],
+  "qualities": [0.95],
+  "embedding_dim": 512,
+  "model": "ARCFACE"
+}
 ```
 
-#### Complete Enrollment
+---
+
+### 4. Verify Faces (1:1)
+**POST** `/verify`
+
+Verify if two faces belong to the same person (1:1 matching).
+
+**Request:**
 ```bash
-POST /enroll/complete/{user_id}
+curl -X POST "http://localhost:8000/verify" \
+  -F "file1=@image1.jpg" \
+  -F "file2=@image2.jpg" \
+  -H "Accept: application/json"
 ```
 
-#### Cancel Enrollment
-```bash
-POST /enroll/cancel/{user_id}
+**Response:**
+```json
+{
+  "is_match": true,
+  "similarity": 0.85,
+  "distance": 0.42,
+  "confidence": 0.95,
+  "threshold_used": 0.6
+}
 ```
 
-#### Get Enrollment Status
+---
+
+### 5. Identify Face (1:N)
+**POST** `/identify`
+
+Identify a face against all enrolled students (1:N matching).
+
+**Request:**
 ```bash
-GET /enroll/status/{user_id}
+curl -X POST "http://localhost:8000/identify" \
+  -F "file=@image.jpg" \
+  -H "Accept: application/json"
 ```
 
-### User Management
-
-#### Delete User
-```bash
-DELETE /user/{user_id}
+**Response:**
+```json
+{
+  "matches": [
+    {
+      "student_id": "S001",
+      "student_name": "John Doe",
+      "similarity": 0.89,
+      "distance": 0.38,
+      "confidence": 0.98
+    },
+    {
+      "student_id": "S002",
+      "student_name": "Jane Smith",
+      "similarity": 0.72,
+      "distance": 0.65,
+      "confidence": 0.85
+    }
+  ],
+  "best_match": {
+    "student_id": "S001",
+    "student_name": "John Doe",
+    "similarity": 0.89
+  },
+  "found": true
+}
 ```
 
-#### Get User Count
+---
+
+### 6. Enroll Student
+**POST** `/enroll-student`
+
+Enroll a new student with facial embeddings.
+
+**Request:**
 ```bash
-GET /users/count
+curl -X POST "http://localhost:8000/enroll-student" \
+  -F "file=@image.jpg" \
+  -F "student_id=S001" \
+  -F "student_name=John Doe" \
+  -F "class_code=CLASS101" \
+  -H "Accept: application/json"
 ```
 
-## 🔧 Module Overview
+**Response:**
+```json
+{
+  "success": true,
+  "student_id": "S001",
+  "student_name": "John Doe",
+  "class_code": "CLASS101",
+  "message": "Student enrolled successfully",
+  "embeddings_saved": 1,
+  "avg_quality": 0.94
+}
+```
 
-### 1. `detection.py`
-- **SCRFD-based face detection**
-- Quality assessment (brightness, sharpness, size)
-- Facial landmark extraction
-- Fallback to OpenCV Haar Cascades
+---
 
-### 2. `feature_extraction.py`
-- **ArcFace embedding extraction**
-- 512-dimensional face vectors
-- L2 normalization
-- Batch processing support
+### 7. Mark Attendance
+**POST** `/attendance`
 
-### 3. `normalization.py`
-- Face alignment using landmarks
-- Histogram equalization
-- CLAHE enhancement
-- Standardization for model input
+Mark student attendance using facial recognition.
 
-### 4. `matching.py`
-- Cosine similarity / Euclidean distance
-- 1:1 verification
-- 1:N identification
-- Face clustering and deduplication
+**Request:**
+```bash
+curl -X POST "http://localhost:8000/attendance" \
+  -F "file=@image.jpg" \
+  -F "class_code=CLASS101" \
+  -H "Accept: application/json"
+```
 
-### 5. `pose_estimation.py`
-- Yaw, pitch, roll angle estimation
-- Pose classification (front, left, right, down)
-- Validation for enrollment
-- Real-time feedback
+**Response:**
+```json
+{
+  "success": true,
+  "student_id": "S001",
+  "student_name": "John Doe",
+  "class_code": "CLASS101",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "confidence": 0.95,
+  "message": "Attendance marked successfully"
+}
+```
 
-### 6. `video_capture.py`
-- Quality-checked frame capture
-- Real-time feedback system
-- Obstruction detection
-- Optimal frame selection
+---
 
-### 7. `enrollment.py`
-- Multi-pose enrollment sessions
-- Progress tracking
-- Quality validation per pose
-- Average embedding calculation
+### 8. API Info
+**GET** `/`
 
-### 8. `database.py`
-- Django ORM integration
-- Embedding cache system
-- Recognition logging
-- User management
+Get API version and capabilities information.
+
+**Response:**
+```json
+{
+  "name": "Facial Recognition API v2.0",
+  "version": "2.0.0",
+  "description": "Advanced multi-model facial recognition system",
+  "capabilities": {
+    "detection_models": ["SCRFD (Primary)", "YOLOv8", "RetinaFace"],
+    "embedding_models": ["ArcFace (Primary)", "FaceNet", "VGGFace2"],
+    "distance_metrics": ["Cosine", "Euclidean", "Manhattan", "Angular"],
+    "features": ["multi_model_ensemble", "quality_assessment", "long_distance_optimization", "adaptive_thresholds"]
+  }
+}
+```
+
+## 🔧 Module Overview (v2.0 - Advanced)
+
+### 1. `detection_advanced.py`
+**Multi-Model Ensemble Face Detection**
+- **Primary Model**: SCRFD (InsightFace) - 500x500 resolution
+- **Secondary Models**: YOLOv8-Face, RetinaFace
+- **Ensemble NMS** - Automatic detection merging for best accuracy
+- **Quality Assessment** - Blur detection, brightness, contrast evaluation
+- **Facial Landmarks** - 5 or 106 point facial landmarks
+- **Multi-scale Detection** - Handles faces from 1m to 50m distance
+- **Classes**: 
+  - `FaceDetectorAdvanced` - Main detection engine
+  - Methods: `detect_faces()`, `_merge_detections()`, `_assess_quality()`
+
+### 2. `feature_extraction_advanced.py`
+**Advanced Multi-Model Embedding Extraction**
+- **Primary Model**: ArcFace (512-dimensional embeddings)
+- **Optional Models**: FaceNet, VGGFace2
+- **Ensemble Mode** - Combine multiple embedding models for robustness
+- **Batch Processing** - Efficient processing of multiple faces
+- **L2 Normalization** - Normalized embedding vectors
+- **Classes**:
+  - `FeatureExtractorAdvanced` - Embedding extraction engine
+  - Methods: `extract_embedding()`, `extract_embeddings_batch()`, `_extract_arcface()`
+
+### 3. `matching_advanced.py`
+**Advanced Face Matching with Adaptive Thresholds**
+- **Distance Metrics**: Cosine (default), Euclidean, Manhattan, Angular
+- **Adaptive Thresholding** - Gallery-size aware thresholds
+- **Quality-Weighted Scoring** - Confidence based on face quality
+- **1:1 Verification** - Compare two faces
+- **1:N Identification** - Match against gallery of enrolled students
+- **Top-K Matching** - Return top K matches with scores
+- **Classes**:
+  - `FaceMatcherAdvanced` - Matching engine
+  - Methods: `verify()`, `identify()`, `compute_distance()`, `batch_identify()`
+
+### 4. `normalization_advanced.py`
+**Advanced Face Preprocessing and Alignment**
+- **2D/3D Face Alignment** - Using landmarks
+- **CLAHE Enhancement** - Adaptive histogram equalization
+- **Gamma Correction** - Illumination normalization
+- **Deblurring** - Image sharpening
+- **Color Space Normalization** - RGB standardization
+- **Quality Assessment** - Face suitability scoring
+- **Classes**:
+  - `FaceNormalizerAdvanced` - Preprocessing engine
+  - Methods: `normalize_complete()`, `align_face_advanced()`, `assess_quality()`
+
+### 5. `long_distance_optimizer.py`
+**Long-Distance and Small-Face Recognition Optimization**
+- **Multi-scale Detection** - Detect faces at various distances
+- **Denoising** - Image noise reduction for small faces
+- **Super-Resolution** - Upscaling small face regions
+- **Distance Estimation** - Automatic threshold adjustment
+- **Multi-scale Preprocessing** - Resolution adaptation
+- **Classes**:
+  - `LongDistanceOptimizer` - Long-distance recognition engine
+  - Methods: `preprocess_for_long_distance()`, `multi_scale_detection()`, `adjust_threshold_by_distance()`
+
+### 6. `main.py`
+**FastAPI v2.0 Server with All Advanced Modules**
+- **8 RESTful Endpoints** - Health, Detection, Features, Verify, Identify, Enroll, Attendance, Info
+- **Async Processing** - FastAPI async/await support
+- **Automatic Documentation** - Swagger UI + ReDoc at /docs and /redoc
+- **Global Components** - Detector, Extractor, Matcher, Normalizer, LongDistanceOptimizer
+- **Error Handling** - Comprehensive error messages with HTTP status codes
+- **CORS Enabled** - Cross-origin requests support
+
+### 7. `database.py`
+**Django Integration and Embedding Management**
+- **Django ORM Support** - Integration with Django models
+- **Embedding Cache** - In-memory and database-backed caching
+- **Student Management** - Enrollment and retrieval
+- **Attendance Logging** - Track attendance records
+- **Methods**:
+  - `mark_attendance(student_id, class_code)` - Mark attendance with timestamp
+  - `get_all_embeddings_for_matching()` - Retrieve embeddings for 1:N matching
+  - `save_enrollment(student_id, embedding, class_code)`
+  - `get_embeddings_by_class(class_code)`
+
+### 8. `enrollment.py`
+**Student Enrollment with Pose-Based Capture**
+- **Multi-pose Enrollment** - Capture faces at different angles
+- **Quality Validation** - Per-pose quality checking
+- **Pose Estimation** - Front, left, right, down pose detection
+- **Progress Tracking** - Enrollment session management
+- **Average Embedding** - Combine multiple embeddings per student
+- **Updated to use advanced modules** - Uses FaceDetectorAdvanced, FeatureExtractorAdvanced, etc.
+
+### 9. `pose_estimation.py`
+**Pose and Angle Estimation**
+- **Yaw, Pitch, Roll** - 3D head pose angles
+- **Pose Classification** - Categorical pose labels
+- **Real-time Feedback** - Guidance for enrollment
+- **Validation** - Pose acceptance/rejection criteria
+
+### 10. `video_capture.py`
+**Real-time Video Frame Capture and Quality Assessment**
+- **Quality Monitoring** - Frame-by-frame quality evaluation
+- **Obstruction Detection** - Detect glasses, masks, occlusions
+- **Optimal Frame Selection** - Auto-select best frames
+- **Real-time Feedback** - User guidance system
+
+## 🎯 Advanced Features (v2.0)
+
+### Multi-Model Ensemble Detection
+Combines SCRFD, YOLOv8, and RetinaFace for maximum accuracy:
+```python
+# Automatically uses all 3 models and merges results
+detections = detector.detect_faces(image, detector_type="ENSEMBLE")
+```
+
+### Adaptive Thresholding
+Matching thresholds automatically adjust based on gallery size:
+```python
+# Threshold automatically adjusted for gallery of 100 students
+match = matcher.identify(embedding, student_id="S001", gallery_size=100)
+```
+
+### Quality-Aware Matching
+Face quality scores influence final confidence:
+```python
+# Confidence includes both similarity AND face quality
+confidence = similarity * face_quality
+```
+
+### Long-Distance Optimization
+Handles faces from 1m to 50m distance:
+```python
+# Automatically applies denoising, super-resolution for small faces
+optimized = long_distance_optimizer.preprocess_for_long_distance(image)
+```
 
 ## 🔌 Django Integration
 
@@ -303,83 +590,303 @@ curl -X POST "http://localhost:8000/identify" \
   -F "file=@unknown.jpg"
 ```
 
-## ⚙️ Configuration
+## ⚙️ Configuration (v2.0)
 
-### GPU Support
+### Environment Variables
 
-To enable GPU acceleration, install:
+Create a `.env` file in the project root:
 
 ```bash
+# API Settings
+API_HOST=0.0.0.0
+API_PORT=8000
+API_DEBUG=False
+API_WORKERS=4
+
+# Model Settings
+DETECTION_MODEL=ENSEMBLE  # SCRFD, YOLOV8, RETINAFACE, ENSEMBLE
+EMBEDDING_MODEL=ARCFACE   # ARCFACE, FACENET, VGGFACE2
+DISTANCE_METRIC=COSINE    # COSINE, EUCLIDEAN, MANHATTAN, ANGULAR
+
+# Thresholds
+VERIFICATION_THRESHOLD=0.6       # 1:1 matching
+IDENTIFICATION_THRESHOLD=0.6     # 1:N matching
+MIN_FACE_SIZE=40                 # pixels
+MIN_CONFIDENCE=0.5               # detection confidence
+
+# GPU Settings
+USE_GPU=True
+GPU_DEVICE_ID=0
+
+# Database (optional)
+DATABASE_URL=postgresql://user:password@localhost/facedb
+REDIS_URL=redis://localhost:6379/0
+```
+
+### GPU Support (NVIDIA CUDA)
+
+**Enable GPU acceleration:**
+
+```bash
+# 1. Install CUDA 11.8+ (if not already installed)
+# Visit: https://developer.nvidia.com/cuda-downloads
+
+# 2. Install GPU-accelerated packages
 pip uninstall onnxruntime
 pip install onnxruntime-gpu==1.16.3
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 3. Verify GPU setup
+python3 -c "import torch; print(torch.cuda.is_available())"
 ```
 
-Then update `main.py`:
+### Detector Configuration
+
+In `main.py`, modify detector initialization:
 
 ```python
-ctx_id = 0  # GPU device ID (0, 1, 2, ...)
-```
+# Multi-model ensemble (recommended)
+detector = FaceDetectorAdvanced(
+    detector_type="ENSEMBLE",
+    min_confidence=0.5,
+    device="cuda:0",  # GPU device or "cpu"
+    enable_quality=True
+)
 
-### Adjust Thresholds
-
-In `main.py`, modify:
-
-```python
-# Detection confidence
-detector = FaceDetector(min_confidence=0.5)  # 0.0-1.0
-
-# Matching threshold
-matcher = FaceMatcher(threshold=0.4)  # Lower = stricter
-
-# Pose thresholds
-pose_estimator = PoseEstimator(
-    yaw_threshold=20.0,    # degrees
-    pitch_threshold=15.0   # degrees
+# Single model (faster)
+detector = FaceDetectorAdvanced(
+    detector_type="SCRFD",
+    min_confidence=0.6,
+    device="cpu"
 )
 ```
 
-## 📊 Performance
+### Matcher Configuration
 
-### Typical Performance (CPU - Intel i7)
-- Face Detection: ~50-100ms per image
-- Feature Extraction: ~30-50ms per face
-- Matching: <1ms per comparison
-- 1:N Identification: ~10ms for 1000 users (with cache)
+Adjust matching thresholds in `main.py`:
 
-### GPU Performance (NVIDIA RTX 3080)
-- Face Detection: ~10-20ms per image
-- Feature Extraction: ~5-10ms per face
+```python
+# Adaptive thresholding
+matcher = FaceMatcherAdvanced(
+    distance_metric="COSINE",
+    default_threshold=0.6,
+    quality_weight=0.3,  # How much quality affects confidence
+    gallery_size_adaptive=True
+)
+```
 
-## 🔒 Security Considerations
+### Long-Distance Optimization
 
-1. **API Authentication**: Add authentication middleware for production
-2. **Rate Limiting**: Implement rate limiting to prevent abuse
-3. **CORS**: Configure `allow_origins` appropriately
-4. **HTTPS**: Use HTTPS in production
-5. **Input Validation**: All inputs are validated
-6. **Embedding Storage**: Store embeddings securely in database
+Enable for distant/small face recognition:
+
+```python
+# In main.py
+long_distance_optimizer = LongDistanceOptimizer(
+    enable_denoising=True,
+    enable_super_resolution=False,  # Requires OpenCV contrib
+    distance_thresholds={
+        "close": 0.65,      # < 2m
+        "medium": 0.55,     # 2m - 5m
+        "far": 0.45         # > 5m
+    }
+)
+```
+
+## 📊 Performance Tuning
+
+### CPU Optimization
+- **Batch Processing**: Process multiple faces together for efficiency
+- **Model Selection**: SCRFD is fastest, RetinaFace is most accurate
+- **Threading**: Use async endpoints for concurrent requests
+
+### GPU Optimization
+- **Batch Size**: Increase batch size for better GPU utilization
+- **CUDA Streams**: Multiple streams for parallel processing
+- **Memory**: Monitor GPU memory with `nvidia-smi`
+
+### Database Optimization
+- **Embedding Cache**: Keep in-memory cache of frequently used embeddings
+- **Indexing**: Add database indexes on student_id and class_code
+- **Batch Operations**: Bulk insert/update for multiple students
+
+### Typical Performance
+
+**CPU Performance (Intel i7-8700K):**
+- Face Detection (SCRFD): 50-100ms per image
+- Feature Extraction (ArcFace): 30-50ms per face
+- Matching (1:1 verification): <1ms
+- 1:N Identification (1000 students): 10-20ms
+
+**GPU Performance (NVIDIA RTX 3080):**
+- Face Detection (SCRFD): 10-20ms per image
+- Feature Extraction (ArcFace): 5-10ms per face
+- Batch Identification (1000 students): 5-10ms
+
+## 🔒 Security & Deployment
+
+### Production Deployment Checklist
+
+- [ ] Enable HTTPS with valid SSL certificate
+- [ ] Add authentication/authorization (JWT, OAuth2)
+- [ ] Implement rate limiting (FastAPI SlowAPI)
+- [ ] Enable CORS appropriately (`allow_origins`)
+- [ ] Add request logging for audit trail
+- [ ] Encrypt embeddings in database
+- [ ] Use environment variables for secrets
+- [ ] Set up monitoring and alerts
+- [ ] Regular security updates to dependencies
+
+### Authentication Example
+
+```python
+from fastapi.security import HTTPBearer, HTTPAuthCredential
+
+security = HTTPBearer()
+
+@app.post("/identify")
+async def identify(
+    file: UploadFile,
+    credentials: HTTPAuthCredential = Depends(security)
+):
+    # Verify token before processing
+    verify_token(credentials.credentials)
+    # ... rest of code
+```
+
+### Rate Limiting
+
+```bash
+pip install slowapi
+
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+@app.post("/identify")
+@limiter.limit("10/minute")
+async def identify(request: Request, ...):
+    ...
+```
 
 ## 🐛 Troubleshooting
 
-### Models Not Downloading
+### Common Issues & Solutions
+
+**1. Models Not Found / Downloading**
 ```bash
-# Manually download models
-mkdir -p ~/.insightface/models
-# Download from: https://github.com/deepinsight/insightface/tree/master/model_zoo
+# Check model cache directory
+ls -la ~/.insightface/models/
+
+# Manually set model path
+export INSIGHTFACE_HOME=/path/to/models
+
+# Clear cache and re-download
+rm -rf ~/.insightface/models/*
 ```
 
-### ONNX Runtime Issues
+**2. ONNX Runtime Errors**
 ```bash
-# Reinstall onnxruntime
+# Verify ONNX installation
+python3 -c "import onnxruntime; print(onnxruntime.get_available_providers())"
+
+# Reinstall ONNX
 pip uninstall onnxruntime onnxruntime-gpu
 pip install onnxruntime==1.16.3
 ```
 
-### OpenCV Issues
+**3. CUDA/GPU Issues**
 ```bash
-# Install system dependencies (Ubuntu/Debian)
-sudo apt-get install libgl1-mesa-glx libglib2.0-0
+# Check CUDA availability
+python3 -c "import torch; print(torch.cuda.is_available())"
+nvidia-smi  # Check GPU status
+
+# Reinstall PyTorch with CUDA support
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
+
+**4. OpenCV Errors (Linux)**
+```bash
+# Install system dependencies
+sudo apt-get update
+sudo apt-get install -y libgl1-mesa-glx libglib2.0-0 libsm6 libxext6
+
+# Or use opencv-python-headless
+pip uninstall opencv-python
+pip install opencv-python-headless
+```
+
+**5. Out of Memory Errors**
+```bash
+# Reduce batch size in normalization_advanced.py
+batch_size = 1  # Instead of 8 or 16
+
+# Reduce embedding cache size in database.py
+max_cache_size = 500  # Instead of 10000
+
+# Use CPU instead of GPU
+device = "cpu"  # In detector initialization
+```
+
+**6. Low Accuracy / False Matches**
+```python
+# Increase thresholds (stricter matching)
+matcher = FaceMatcherAdvanced(default_threshold=0.7)
+
+# Enable quality weighting
+matcher.quality_weight = 0.5
+
+# Use ensemble detection for better input quality
+detector_type = "ENSEMBLE"
+```
+
+**7. Slow Performance**
+```bash
+# Check if GPU is being used
+nvidia-smi
+
+# Profile code
+pip install py-spy
+py-spy record -o profile.svg -- python3 main.py
+
+# Analyze bottlenecks
+python3 -m cProfile -s cumtime main.py
+```
+
+**8. Database Connection Issues**
+```python
+# Test Django connection
+python manage.py shell
+>>> from identiface.face_recognition.database import DatabaseConnector
+>>> db = DatabaseConnector()
+>>> db.test_connection()
+```
+
+### Debug Mode
+
+Enable debug logging:
+
+```python
+# In main.py, add at startup
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Monitor component health
+@app.on_event("startup")
+async def startup_event():
+    logger.info("API starting up...")
+    logger.info(f"Detection model: {detector.detector_type}")
+    logger.info(f"Device: {detector.device}")
+```
+
+### Getting Help
+
+- **API Documentation**: http://localhost:8000/docs
+- **Issue Tracker**: Check project issues
+- **InsightFace Docs**: https://github.com/deepinsight/insightface
+- **FastAPI Docs**: https://fastapi.tiangolo.com/
 
 ## 📝 License
 

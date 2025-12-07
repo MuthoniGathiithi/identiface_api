@@ -1,3 +1,8 @@
+# ============================================================================
+# IDENTIFACE API - ADVANCED FACE RECOGNITION SYSTEM
+# Best-in-class facial recognition models and optimization
+# ============================================================================
+
 # Core Dependencies
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
@@ -6,30 +11,93 @@ pydantic==2.5.0
 
 # Computer Vision & Deep Learning
 opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78  # For advanced CV features (CLAHE, etc.)
 numpy==1.24.3
 scipy==1.11.4
 
-# InsightFace (SCRFD + ArcFace)
+# ============================================================================
+# PRIMARY: InsightFace (SCRFD Detection + ArcFace Recognition)
+# - SCRFD: Advanced face detector
+# - ArcFace: State-of-the-art face recognition (512-dim embeddings)
+# - Buffalo_l: High accuracy model (~600MB)
+# - Antelopev2: Latest model with improved performance
+# ============================================================================
 insightface==0.7.3
 onnxruntime==1.16.3
-# For GPU support, use: onnxruntime-gpu==1.16.3
 
-# Optional: Alternative backends
-# mtcnn==0.1.1
-# mediapipe==0.10.8
+# For GPU acceleration (optional, uncomment if using NVIDIA GPU)
+# onnxruntime-gpu==1.16.3
 
-# Django Integration (if using Django)
-# django==4.2.7
-# psycopg2-binary==2.9.9  # For PostgreSQL
-# mysqlclient==2.2.0      # For MySQL
+# ============================================================================
+# SECONDARY: YOLOv8-Face (Long-distance & Small Face Detection)
+# - Better for long-distance face detection
+# - Supports small face detection
+# ============================================================================
+ultralytics==8.0.227  # YOLOv8
 
-# Utilities
+# ============================================================================
+# TERTIARY: RetinaFace (Long-distance Optimization)
+# - Excellent for small and distant faces
+# - Multi-scale face detection
+# ============================================================================
+retinafacedetection==0.0.13
+# OR alternative: retinaface==0.0.13
+
+# ============================================================================
+# ADVANCED EMBEDDING MODELS
+# - Multiple embedding backends for ensemble recognition
+# ============================================================================
+
+# FaceNet (PyTorch-based)
+facenet-pytorch==2.5.0
+torch==2.0.1  # PyTorch (required for FaceNet)
+torchvision==0.15.2
+
+# DeepFace (Multi-model support: VGGFace2, ArcFace, Dlib, etc.)
+deepface==0.0.75
+
+# ============================================================================
+# ENHANCEMENT & OPTIMIZATION
+# - Super-resolution for small faces
+# - Denoising and quality enhancement
+# ============================================================================
+# Real-ESRGAN for super-resolution (optional)
+# realesrgan==0.3.0
+
+# ============================================================================
+# DATABASE & DJANGO INTEGRATION
+# ============================================================================
+django==4.2.7
+psycopg2-binary==2.9.9  # For PostgreSQL
+# mysqlclient==2.2.0    # For MySQL (if needed)
+
+# ============================================================================
+# UTILITIES & TOOLS
+# ============================================================================
 Pillow==10.1.0
 python-dotenv==1.0.0
+requests==2.31.0
+tqdm==4.66.1  # Progress bars
 
-# Development & Testing
+# ============================================================================
+# PERFORMANCE & MONITORING
+# ============================================================================
+redis==5.0.0  # For caching embeddings
+psutil==5.9.5  # System monitoring
+
+# ============================================================================
+# DEVELOPMENT & TESTING
+# ============================================================================
 pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx==0.25.2
 black==23.12.0
 flake8==6.1.0
+mypy==1.7.1  # Type checking
+
+# ============================================================================
+# OPTIONAL: GPU SUPPORT
+# ============================================================================
+# For CUDA support (uncomment if using NVIDIA GPUs):
+# cuda-python==12.2.0
+# cupy-cuda11x==12.2.0  # Replace 11x with your CUDA version (111, 112, 121, etc.)

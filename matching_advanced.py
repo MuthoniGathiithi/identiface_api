@@ -55,7 +55,7 @@ class FaceMatcherAdvanced:
             DistanceMetric.ANGULAR: (5.0, 30.0),        # Lower is stricter
         }
         
-        logger.info(f"Initialized FaceMatcherAdvanced with {metric.value} metric, "
+        logger.info(f"Initialized FaceMatcherAdvanced with {metric} metric, "
                    f"threshold={threshold}, adaptive={use_adaptive_threshold}")
     
     def compute_distance(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:

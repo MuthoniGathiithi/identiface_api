@@ -1,8 +1,62 @@
-# Advanced Face Recognition API Service - v2.0
+# 🎯 Identiface - Advanced Face Recognition System v2.1
 
-A state-of-the-art facial identification API with **multi-model ensemble detection** and **advanced embeddings** for production deployment.
+**Production-ready facial identification system with multi-model detection and threshold-based matching**
 
-## 🚀 Features (v2.0 - Upgraded)
+## ✨ Key Features
+
+### 🔍 Face Detection
+- Multi-model ensemble (SCRFD, YOLOv8, RetinaFace)
+- Multi-face detection in single images
+- Quality assessment (blur, brightness, contrast)
+- Long-distance and small face detection
+- Pose-aware face capture
+
+### 👤 Face Recognition  
+- ArcFace embeddings (512-dimensional vectors)
+- Threshold-based matching (reduce false positives)
+- Cosine distance metric
+- Confidence scoring
+- Top-K identification
+
+### 📚 Student Management
+- Multi-pose enrollment (front, left, right, down)
+- Automatic face embedding storage
+- Per-class student galleries
+- Real-time face verification
+
+### 📊 Attendance System
+- Multi-face recognition in single photo
+- Confidence-based filtering
+- Automatic student marking
+- Attendance session tracking
+- Historical records
+
+### 🌈 Modern UI
+- Indigo color theme (changed from green)
+- Responsive design
+- Real-time feedback messages
+- Progress indicators
+- Mobile-friendly interface
+
+## 🚀 Quick Start (3 Commands)
+
+```bash
+# 1. Install all dependencies (one command)
+pip3 install fastapi uvicorn pydantic python-multipart opencv-python numpy scipy Pillow django psycopg2-binary requests python-dotenv
+
+# 2. Start the backend API (Terminal 1)
+cd /home/muthoni/identiface_api && python3 main.py
+
+# 3. Start the frontend Django server (Terminal 2)
+cd /home/muthoni/identiface && python3 manage.py runserver 0.0.0.0:8001
+```
+
+**Access:**
+- Frontend: http://localhost:8001
+- Backend Docs: http://localhost:8000/docs
+- Health Check: http://localhost:8000/health
+
+## 🛠️ Full Installation & Setup
 
 ### Detection (Multi-Model Ensemble)
 - **SCRFD** (InsightFace) - Primary detector
